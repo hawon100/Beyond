@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,6 +14,8 @@ public class SwipeUI : MonoBehaviour
     private float swipeTime = 0.2f;
     [SerializeField]
     private float swipeDistance = 50.0f;
+    [SerializeField]
+    private Button[] circleButtons;
 
     private float[] scrollPageValues;
     private float valueDistance = 0;
@@ -52,6 +55,7 @@ public class SwipeUI : MonoBehaviour
     {
         UpdateInput();
         UpdateCircleContent();
+        UpdateButton();
     }
 
     private void UpdateInput()
@@ -144,6 +148,14 @@ public class SwipeUI : MonoBehaviour
                 circleContents[i].localScale = Vector2.one * circleContentScale;
                 circleContents[i].GetComponent<Image>().color = Color.black;
             }
+        }
+    }
+
+    private void UpdateButton()
+    {
+        for(int i = 0; i < circleButtons.Length; ++i)
+        {
+
         }
     }
 }

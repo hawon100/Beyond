@@ -32,7 +32,7 @@ public class WindowManager : ScrollRect
             windows.Add(t);
 
         foreach (var window in windows)
-            window.sizeDelta = new Vector2(Screen.width, Screen.height - 500);
+            window.sizeDelta = new Vector2(1080, 1920 - 500);
     }
 
     public override void OnBeginDrag(PointerEventData eventData)
@@ -52,7 +52,7 @@ public class WindowManager : ScrollRect
         }
         else
         {
-            index = Mathf.RoundToInt(Mathf.Abs(content.anchoredPosition.x / Screen.width));
+            index = Mathf.RoundToInt(Mathf.Abs(content.anchoredPosition.x / 1080));
         }
 
         index = Mathf.Clamp(index, 0, windows.Count - 1);

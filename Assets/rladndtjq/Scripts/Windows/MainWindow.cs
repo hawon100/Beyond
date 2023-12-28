@@ -54,35 +54,31 @@ public class MainWindow : Window
     private int lastUpdateHour;
     private int lastUpdateDay;
 
-    private void Start()
+    protected override void Awake()
     {
-        Refresh();
+        base.Awake();
+        LoadingManager.Instance.AddTask(new LoadingTaskData<string>(GetCurrentWeather, json =>
+        {
+            PlayerPrefs.SetString("weather", json);
+            PlayerPrefs.Save();
+        }));
+        LoadingManager.Instance.AddTask(new LoadingTaskData<string>(GetForecast, json =>
+        {
+            PlayerPrefs.SetString("forecast", json);
+            PlayerPrefs.Save();
+        }));
+        LoadingManager.Instance.AddTask(new LoadingTaskData<string>(GetLaunch, json =>
+        {
+            PlayerPrefs.SetString("launch", json);
+            PlayerPrefs.Save();
+        }));
+        LoadingManager.Instance.OnLoadComplete += Refresh;
     }
 
     public override void Refresh()
     {
-        InitializeData().Forget();
-    }
-
-    private async UniTaskVoid InitializeData()
-    {
-        var json = await RequestJsonNEIS(DateTime.Now);
-
         var now = DateTime.Now;
-        if (lastUpdateHour != now.Hour)
-        {
-            lastUpdateHour = now.Hour;
-            PlayerPrefs.SetString("weather", await GetCurrentWeather(now));
-        }
 
-        if (lastUpdateDay != now.Day)
-        {
-            lastUpdateDay = now.Day;
-            PlayerPrefs.SetString("forecast", await GetForecast(now));
-            PlayerPrefs.SetString("launch", await GetLaunch(now));
-        }
-
-        PlayerPrefs.Save();
         var weather = SaveLoad.Load<Weather>("weather");
         var forecast = SaveLoad.Load<Forecast>("forecast");
         var launch = SaveLoad.Load<Launch>("launch");
@@ -96,8 +92,35 @@ public class MainWindow : Window
             LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
     }
 
-    private async UniTask<string> GetForecast(DateTime now)
+    private void Update()
     {
+        LoadData().Forget();
+    }
+
+    private async UniTaskVoid LoadData()
+    {
+        var now = DateTime.Now;
+        if (lastUpdateHour != now.Hour)
+        {
+            lastUpdateHour = now.Hour;
+            PlayerPrefs.SetString("weather", await GetCurrentWeather());
+            PlayerPrefs.Save();
+            Refresh();
+        }
+
+        if (lastUpdateDay != now.Day)
+        {
+            lastUpdateDay = now.Day;
+            PlayerPrefs.SetString("forecast", await GetForecast());
+            PlayerPrefs.SetString("launch", await GetLaunch());
+            PlayerPrefs.Save();
+            Refresh();
+        }
+    }
+
+    private async UniTask<string> GetForecast()
+    {
+        var now = DateTime.Now;
         var jobj = JObject.Parse(await RequestJsonKMA(true, now));
         var todayInfo =
             jobj["response"]["body"]["items"]["item"].
@@ -119,8 +142,9 @@ public class MainWindow : Window
         return JsonUtility.ToJson(forecast);
     }
 
-    private async UniTask<string> GetCurrentWeather(DateTime now)
+    private async UniTask<string> GetCurrentWeather()
     {
+        var now = DateTime.Now;
         var jobj = JObject.Parse(await RequestJsonKMA(false, now));
         var todayInfo =
             jobj["response"]["body"]["items"]["item"].
@@ -144,9 +168,6 @@ public class MainWindow : Window
 
     private async UniTask<string> RequestJsonKMA(bool isForecast, DateTime now)
     {
-        Debug.Log(now);
-        Debug.Log($"isForecast : {isForecast}");
-
         string url =
             isForecast ?
             "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst" :
@@ -157,11 +178,20 @@ public class MainWindow : Window
         url += "&numOfRows=1000";
         url += "&dataType=JSON";
 
-        var date = "&base_date=" +
-            (isForecast ?
-            $"{now:yyyyMM}{now.AddDays(-1).Day:00}" :
-            now.ToString("yyyyMMdd"));
-        Debug.Log(date);
+        var date = "&base_date=";
+        if (isForecast)
+        {
+            date += $"{now:yyyyMM}{now.AddDays(-1).Day:00}";
+        }
+        else
+        {
+            if (now.Minute > 40)
+                date += now.ToString("yyyyMMdd");
+            else
+                date += now.AddHours(-1).ToString("yyyyMMdd");
+        }
+        
+
         url += date;
 
         string basetime = $"&base_time=";
@@ -176,7 +206,6 @@ public class MainWindow : Window
             else
                 basetime += $"{now.AddHours(-1).Hour:00}00";
         }
-        Debug.Log(basetime);
         url += basetime;
 
         url += "&nx=60";
@@ -198,8 +227,9 @@ public class MainWindow : Window
         return results;
     }
 
-    private async UniTask<string> GetLaunch(DateTime now)
+    private async UniTask<string> GetLaunch()
     {
+        var now = DateTime.Now;
         var jobj = JObject.Parse(await RequestJsonNEIS(now));
         var data = jobj["mealServiceDietInfo"][1]["row"][0];
         var launch = new Launch();

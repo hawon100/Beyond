@@ -10,7 +10,7 @@ public class WindowDragReceiver : MonoBehaviour, IBeginDragHandler, IDragHandler
     protected IDragHandler dragHandler;
     protected IEndDragHandler endDragHandler;
 
-    protected void Awake()
+    protected virtual void Awake()
     {
         var t = transform;
         while(t)

@@ -38,13 +38,16 @@ public abstract class ArticleWindow : Window
             nextButtonTexts[i] = nextButtons[i].GetComponent<TextMeshProUGUI>();
         }
 
-        writingButton.onClick.AddListener(WritingWindow.Instance.Open);
+        if(writingButton)
+            writingButton.onClick.AddListener(() => WritingWindow.Instance.Open());
 
         WindowManager.Instance.OnIndexChange += (pre, cur) =>
         {
             if (cur != WindowIndex) return;
             Refresh();
         };
+
+        ArticleManager.Instance.OnArticleRemove += article => Refresh();
     }
 
     public override void Refresh()
@@ -71,7 +74,7 @@ public abstract class ArticleWindow : Window
         {
             if (articleSlots.Count > displayCount)
             {
-                Destroy(articleSlots[^1]);
+                Destroy(articleSlots[^1].gameObject);
                 articleSlots.RemoveAt(articleSlots.Count - 1);
             }
             if (articleSlots.Count < displayCount)
@@ -81,7 +84,7 @@ public abstract class ArticleWindow : Window
         }
 
         for (int i = 0; i < displayCount; i++)
-            articleSlots[i].Init(filtered[currentDisplayPageIndex * pageArticleCount + i]);
+            articleSlots[i].Init(filtered[^(currentDisplayPageIndex * pageArticleCount + i + 1)]);
 
         for (int i = 0; i < buttonCount; i++)
         {
@@ -104,7 +107,7 @@ public abstract class ArticleWindow : Window
             var targetIndex = currentDisplayPageIndex + i + 1;
 
             nextButtonTexts[i].text = (targetIndex + 1).ToString();
-            nextButtons[i].gameObject.SetActive(targetIndex < MaxPage);
+            nextButtons[i].gameObject.SetActive(targetIndex <= MaxPage);
             nextButtons[i].onClick.RemoveAllListeners();
             nextButtons[i].onClick.AddListener(() =>
             {

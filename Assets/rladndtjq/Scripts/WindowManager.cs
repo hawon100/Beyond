@@ -19,11 +19,11 @@ public class WindowManager : ScrollRect
         get => index;
         set
         {
-            if(index != value)
+            var v = Mathf.Clamp(value, 0, windows.Count - 1);
+            if(index != v)
             {
-                OnIndexChange?.Invoke(index, value);
-                index = value;
-                index = Mathf.Clamp(index, 0, windows.Count - 1);
+                OnIndexChange?.Invoke(index, v);
+                index = v;
             }
         }
     }

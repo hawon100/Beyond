@@ -11,7 +11,7 @@ public class WindowManager : ScrollRect
 
     private bool isDragging;
     private int index = 2;
-    private List<RectTransform> windows = new();
+    private List<Window> windows = new();
 
     public Action<int, int> OnIndexChange { get; set; }
     public int Index
@@ -19,8 +19,12 @@ public class WindowManager : ScrollRect
         get => index;
         set
         {
-            OnIndexChange?.Invoke(index, value);
-            index = value;
+            if(index != value)
+            {
+                OnIndexChange?.Invoke(index, value);
+                index = value;
+                index = Mathf.Clamp(index, 0, windows.Count - 1);
+            }
         }
     }
 
@@ -28,11 +32,18 @@ public class WindowManager : ScrollRect
     {
         Instance = this;
 
+        var index = 0;
         foreach (RectTransform t in content)
-            windows.Add(t);
+        {
+            windows.Add(t.GetComponent<Window>());
+            windows[^1].WindowIndex = index++;
+            t.sizeDelta = new Vector2(1080, 1920 - 500);
+        }
+    }
 
-        foreach (var window in windows)
-            window.sizeDelta = new Vector2(1080, 1920 - 500);
+    public void RefreshCurrentWindow()
+    {
+        windows[index].Refresh();
     }
 
     public override void OnBeginDrag(PointerEventData eventData)
@@ -47,15 +58,14 @@ public class WindowManager : ScrollRect
 
         if (Mathf.Abs(eventData.delta.x) > 15)
         {
-            if (eventData.delta.x < -15) index++;
-            if (eventData.delta.x > 15) index--;
+            if (eventData.delta.x < -15) Index++;
+            if (eventData.delta.x > 15) Index--;
         }
         else
         {
-            index = Mathf.RoundToInt(Mathf.Abs(content.anchoredPosition.x / 1080));
+            Index = Mathf.RoundToInt(Mathf.Abs(content.anchoredPosition.x / 1080));
         }
 
-        index = Mathf.Clamp(index, 0, windows.Count - 1);
         base.OnEndDrag(eventData);
     }
 
@@ -64,7 +74,7 @@ public class WindowManager : ScrollRect
         if (!isDragging)
         {
             content.anchoredPosition =
-                Vector2.Lerp(content.anchoredPosition, new Vector2(-1080 * index, 0), Time.deltaTime * 10);
+                Vector2.Lerp(content.anchoredPosition, new Vector2(-1080 * Index, 0), Time.deltaTime * 10);
         }
     }
 }
